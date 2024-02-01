@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube MP3 Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            margin-bottom: 5px;
+        }
+        input {
+            margin-bottom: 10px;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .progress-bar .progress {
+            width: 0%;
+            height: 30px;
+            background-color: #007bff;
+            transition: width 0.5s ease-in-out;
+        }
+        .message {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .cancel-button {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>YouTube MP3 Downloader</h1>
+        <form id="downloadForm">
+            <label for="songUrl">Song URL:</label>
+            <input type="text" id="songUrl" name="song_url" required>
+            <label for="outputDir">Output Directory:</label>
+            <input type="text" id="outputDir" name="output_dir" required>
+            <button type="submit" id="downloadButton">Download</button>
+        </form>
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+        <div class="message" id="message"></div>
+        <button class="cancel-button" id="cancelButton">Cancel</button>
+    </div>
+
+    <script>
+        document.getElementById('downloadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var form = document.getElementById('downloadForm');
+            var formData = new FormData(form);
+            var downloadButton = document.getElementById('downloadButton');
+            var progressBar = document.querySelector('.progress-bar .progress');
+            var messageDiv = document.getElementById('message');
+            var cancelButton = document.getElementById('cancelButton');
+
+            progressBar.style.width = '0%';
+            messageDiv.textContent = '';
+            cancelButton.style.display = 'none';
+
+            downloadButton.disabled = true;
+
+            fetch('/download', {
+                method: 'POST',
+                body: formData,
+                // Enable progress tracking
+                onprogress: function(event) {
+                    if (event.lengthComputable) {
+                        var percentComplete = (event.loaded / event.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.textContent = data.message;
+                } else {
+                    messageDiv.textContent = 'Error: ' + data.message;
+                }
+                downloadButton.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                messageDiv.textContent = 'An error occurred';
+                downloadButton.disabled = false;
+            });
+
+            // Show cancel button
+            cancelButton.style.display = 'block';
+        });
+
+        // Cancel button click event handler
+        document.getElementById('cancelButton').addEventListener('click', function() {
+            // Reload the page to cancel the download
+            location.reload();
+        });
+    </script>
+</body>
+</html>
